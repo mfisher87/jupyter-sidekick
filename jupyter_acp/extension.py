@@ -40,6 +40,7 @@ from .registry import HarnessRegistry, HarnessSpec
 DEFAULT_HARNESSES: ListT[Dict[str, Any]] = [
     {"id": "claude-code", "display_name": "Claude Code", "command": "claude-agent-acp"},
     {"id": "opencode", "display_name": "OpenCode", "command": "opencode", "args": ["acp"]},
+    {"id": "goose", "display_name": "Goose", "command": "goose", "args": ["acp"]},
     {"id": "github-copilot", "display_name": "GitHub Copilot", "command": "copilot", "args": ["--acp"]},
     {"id": "qwen-code", "display_name": "Qwen Code", "command": "qwen", "args": ["--experimental-acp"]},
     {"id": "gemini", "display_name": "Gemini CLI", "command": "gemini", "args": ["--experimental-acp"]},
