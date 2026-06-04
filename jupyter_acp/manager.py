@@ -34,10 +34,20 @@ class BindingManager:
                 f"chat {chat_id} already bound to {binding.harness_id!r}"
             )
         spec = self.registry.get(harness_id)  # raises HarnessNotFoundError
+        return await self.bind_spec(chat_id, spec, cwd=cwd)
+
+    async def bind_spec(self, chat_id, spec, cwd: Optional[str] = None) -> ChatBinding:
+        """Bind a chat to an explicit HarnessSpec (e.g. one derived from the
+        shared ACP registry), bypassing the local registry lookup."""
+        binding = self.get_or_create(chat_id)
+        if binding.is_bound:
+            raise AlreadyBoundError(
+                f"chat {chat_id} already bound to {binding.harness_id!r}"
+            )
         session = HarnessSession(spec.command, *spec.args, cwd=cwd, env=spec.env)
         await session.start()
         await session.new_session(cwd=cwd)
-        binding.bind(harness_id, session)
+        binding.bind(spec.id, session)
         return binding
 
     async def close(self, chat_id: str) -> None:

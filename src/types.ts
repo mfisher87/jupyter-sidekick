@@ -54,6 +54,15 @@ export interface HarnessInfo {
   available?: boolean;
 }
 
+/** Entry of GET /jupyter_acp/registry (the shared ACP Agent Registry). */
+export interface RegistryAgent {
+  id: string;
+  display_name: string;
+  description?: string | null;
+  icon?: string | null;
+  launchable: boolean;
+}
+
 /** A message pushed over the per-chat websocket (serialize.update_to_json). */
 export interface StreamEvent {
   type: string;

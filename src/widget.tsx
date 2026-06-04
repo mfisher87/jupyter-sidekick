@@ -12,6 +12,7 @@ import {
   AcpCommand,
   HarnessInfo,
   PermissionOption,
+  RegistryAgent,
   SessionStateSnapshot,
   StreamEvent,
   ToolCallInfo
@@ -88,6 +89,7 @@ function ChatComponent(): JSX.Element {
   const apiRef = useRef<AcpApi>(makeApi());
   const streamRef = useRef<ChatStream | null>(null);
   const [harnesses, setHarnesses] = useState<HarnessInfo[]>([]);
+  const [registry, setRegistry] = useState<RegistryAgent[]>([]);
   const [chosen, setChosen] = useState<string>('');
   const [chatId, setChatId] = useState<string | null>(null);
   const [state, setState] = useState<SessionStateSnapshot | null>(null);
@@ -108,6 +110,11 @@ function ChatComponent(): JSX.Element {
         }
       })
       .catch(e => setError(String(e)));
+    // The shared ACP registry is best-effort (network); ignore failures.
+    apiRef.current
+      .listRegistry()
+      .then(setRegistry)
+      .catch(() => undefined);
     return () => streamRef.current?.close();
   }, []);
 
@@ -174,17 +181,30 @@ function ChatComponent(): JSX.Element {
   if (!chatId) {
     const chosenHarness = harnesses.find(h => h.id === chosen);
     const chosenUnavailable = !!chosenHarness && chosenHarness.available === false;
+    const localIds = new Set(harnesses.map(h => h.id));
+    const registryAgents = registry.filter(a => a.launchable && !localIds.has(a.id));
     return (
       <div className="jacp-picker">
         <h3>New ACP chat</h3>
         {error && <div className="jacp-error">{error}</div>}
         <select value={chosen} onChange={e => setChosen(e.target.value)}>
-          {harnesses.map(h => (
-            <option key={h.id} value={h.id}>
-              {h.display_name}
-              {h.available === false ? ' — not installed' : ''}
-            </option>
-          ))}
+          <optgroup label="Configured">
+            {harnesses.map(h => (
+              <option key={h.id} value={h.id}>
+                {h.display_name}
+                {h.available === false ? ' — not installed' : ''}
+              </option>
+            ))}
+          </optgroup>
+          {registryAgents.length > 0 && (
+            <optgroup label="ACP Registry — runs on demand">
+              {registryAgents.map(a => (
+                <option key={a.id} value={a.id}>
+                  {a.display_name}
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
         <button
           onClick={() => start().catch(e => setError(String(e)))}

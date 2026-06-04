@@ -65,12 +65,32 @@ class BindHandler(_BaseHandler):
         # directory of the active notebook).
         cwd = body.get("cwd") or self.settings.get("server_root_dir")
         try:
-            binding = await self.manager.bind(chat_id, harness_id, cwd=cwd)
-        except HarnessNotFoundError:
-            return self.reply({"error": f"unknown harness {harness_id!r}"}, 404)
+            try:
+                binding = await self.manager.bind(chat_id, harness_id, cwd=cwd)
+            except HarnessNotFoundError:
+                # Not a built-in harness — try the shared ACP registry (the
+                # server derives the npx/uvx launch command; the client never
+                # supplies an arbitrary command).
+                remote = self.settings.get("acp_remote_registry")
+                spec = (
+                    await asyncio.to_thread(remote.spec_for, harness_id) if remote else None
+                )
+                if spec is None:
+                    return self.reply({"error": f"unknown harness {harness_id!r}"}, 404)
+                binding = await self.manager.bind_spec(chat_id, spec, cwd=cwd)
         except AlreadyBoundError as exc:
             return self.reply({"error": str(exc)}, 409)
         self.reply({"harness_id": binding.harness_id})
+
+
+class RegistryHandler(_BaseHandler):
+    @web.authenticated
+    async def get(self) -> None:
+        remote = self.settings.get("acp_remote_registry")
+        # The first call fetches the registry over the network; offload it so we
+        # don't block the event loop.
+        agents = await asyncio.to_thread(remote.listing) if remote else []
+        self.reply({"agents": agents})
 
 
 class StateHandler(_BaseHandler):

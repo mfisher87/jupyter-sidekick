@@ -4,7 +4,7 @@
 // JupyterLab plugin can later supply a `ServerConnection`-aware fetch (XSRF,
 // base URL) without changing call sites.
 
-import { HarnessInfo, SessionStateSnapshot } from './types';
+import { HarnessInfo, RegistryAgent, SessionStateSnapshot } from './types';
 
 export interface ApiOptions {
   /** e.g. "/jupyter_acp" (no trailing slash required). */
@@ -44,6 +44,12 @@ export class AcpApi {
     const res = await this._fetch(this.url('harnesses'));
     const body = await this.readJson<{ harnesses: HarnessInfo[] }>(res);
     return body.harnesses;
+  }
+
+  async listRegistry(): Promise<RegistryAgent[]> {
+    const res = await this._fetch(this.url('registry'));
+    const body = await this.readJson<{ agents: RegistryAgent[] }>(res);
+    return body.agents;
   }
 
   async bind(chatId: string, harnessId: string): Promise<{ harness_id: string }> {

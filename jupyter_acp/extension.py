@@ -22,12 +22,14 @@ from jupyter_server.utils import url_path_join
 from traitlets import Dict as DictTrait
 from traitlets import List as ListTrait
 
+from .acp_registry import AcpRegistry
 from .handlers import (
     BindHandler,
     ConfigOptionHandler,
     HarnessesHandler,
     ModeHandler,
     ModelHandler,
+    RegistryHandler,
     StateHandler,
     StreamHandler,
 )
@@ -87,12 +89,14 @@ class AcpExtension(ExtensionApp):
         registry = build_registry(DEFAULT_HARNESSES + list(self.harnesses))
         self.settings["acp_registry"] = registry
         self.settings["acp_manager"] = BindingManager(registry)
+        self.settings["acp_remote_registry"] = AcpRegistry()
 
     def initialize_handlers(self) -> None:
         base = self.name
         self.handlers.extend(
             [
                 (url_path_join(base, "harnesses"), HarnessesHandler),
+                (url_path_join(base, "registry"), RegistryHandler),
                 (url_path_join(base, r"chats/(.+)/bind"), BindHandler),
                 (url_path_join(base, r"chats/(.+)/state"), StateHandler),
                 (url_path_join(base, r"chats/(.+)/model"), ModelHandler),
