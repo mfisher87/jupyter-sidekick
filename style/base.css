@@ -20,6 +20,12 @@
   font-size: var(--jp-ui-font-size0);
 }
 
+.jacp-hint {
+  color: var(--jp-content-font-color3);
+  font-size: var(--jp-ui-font-size0);
+  max-width: 36ch;
+}
+
 .jacp-chat {
   display: flex;
   flex-direction: column;

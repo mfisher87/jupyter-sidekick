@@ -3,7 +3,12 @@ from __future__ import annotations
 
 import pytest
 
-from jupyter_acp.registry import HarnessNotFoundError, HarnessRegistry, HarnessSpec
+from jupyter_acp.registry import (
+    HarnessNotFoundError,
+    HarnessRegistry,
+    HarnessSpec,
+    harness_listing,
+)
 
 
 def _spec(id_: str = "fake") -> HarnessSpec:
@@ -34,3 +39,14 @@ def test_list_preserves_registration_order():
     registry.register(_spec("a"))
     registry.register(_spec("b"))
     assert [s.id for s in registry.list()] == ["a", "b"]
+
+
+def test_harness_listing_marks_availability():
+    registry = HarnessRegistry()
+    registry.register(HarnessSpec(id="a", display_name="A", command="aaa"))
+    registry.register(HarnessSpec(id="b", display_name="B", command="bbb"))
+    listing = harness_listing(registry, which=lambda cmd: "/bin/aaa" if cmd == "aaa" else None)
+    assert listing == [
+        {"id": "a", "display_name": "A", "available": True},
+        {"id": "b", "display_name": "B", "available": False},
+    ]

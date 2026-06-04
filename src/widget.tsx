@@ -172,6 +172,8 @@ function ChatComponent(): JSX.Element {
   };
 
   if (!chatId) {
+    const chosenHarness = harnesses.find(h => h.id === chosen);
+    const chosenUnavailable = !!chosenHarness && chosenHarness.available === false;
     return (
       <div className="jacp-picker">
         <h3>New ACP chat</h3>
@@ -180,12 +182,22 @@ function ChatComponent(): JSX.Element {
           {harnesses.map(h => (
             <option key={h.id} value={h.id}>
               {h.display_name}
+              {h.available === false ? ' — not installed' : ''}
             </option>
           ))}
         </select>
-        <button onClick={() => start().catch(e => setError(String(e)))} disabled={!chosen}>
+        <button
+          onClick={() => start().catch(e => setError(String(e)))}
+          disabled={!chosen || chosenUnavailable}
+        >
           Start
         </button>
+        {chosenUnavailable && (
+          <div className="jacp-hint">
+            “{chosenHarness?.display_name}” isn’t installed on the server. Install its CLI
+            (the command on its <code>PATH</code>) to use it.
+          </div>
+        )}
       </div>
     );
   }

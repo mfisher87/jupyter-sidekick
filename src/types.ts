@@ -50,6 +50,8 @@ export interface SessionStateSnapshot {
 export interface HarnessInfo {
   id: string;
   display_name: string;
+  /** Whether the agent's command resolves on the server's PATH. */
+  available?: boolean;
 }
 
 /** A message pushed over the per-chat websocket (serialize.update_to_json). */

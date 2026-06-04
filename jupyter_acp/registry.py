@@ -6,8 +6,9 @@ the live ACP session (see `SessionState`).
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import List, Mapping, Optional, Tuple
+import shutil
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple
 
 
 class HarnessNotFoundError(KeyError):
@@ -40,3 +41,20 @@ class HarnessRegistry:
 
     def list(self) -> List[HarnessSpec]:
         return list(self._specs.values())
+
+
+def harness_listing(
+    registry: HarnessRegistry,
+    which: Callable[[str], Optional[str]] = shutil.which,
+) -> List[Dict[str, Any]]:
+    """Serialize the registry for the picker, marking which agents are actually
+    installed (their command resolves on PATH) so the UI can disable the rest
+    instead of letting a bind fail."""
+    return [
+        {
+            "id": spec.id,
+            "display_name": spec.display_name,
+            "available": which(spec.command) is not None,
+        }
+        for spec in registry.list()
+    ]

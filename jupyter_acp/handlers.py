@@ -20,7 +20,7 @@ from tornado import web
 from tornado.websocket import WebSocketHandler
 
 from .binding import AlreadyBoundError
-from .registry import HarnessNotFoundError
+from .registry import HarnessNotFoundError, harness_listing
 from .serialize import update_to_json
 
 
@@ -48,14 +48,7 @@ class _BaseHandler(ExtensionHandlerMixin, APIHandler):
 class HarnessesHandler(_BaseHandler):
     @web.authenticated
     def get(self) -> None:
-        self.reply(
-            {
-                "harnesses": [
-                    {"id": s.id, "display_name": s.display_name}
-                    for s in self.registry.list()
-                ]
-            }
-        )
+        self.reply({"harnesses": harness_listing(self.registry)})
 
 
 class BindHandler(_BaseHandler):
