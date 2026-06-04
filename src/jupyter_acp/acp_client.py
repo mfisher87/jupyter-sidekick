@@ -22,6 +22,13 @@ class HarnessClient(acp.Client):
         every ``session/update`` notification from the harness."""
         self._update_listeners.append(callback)
 
+    def remove_update_listener(self, callback: Callable[[str, object], None]) -> None:
+        """Detach a previously registered listener (e.g. on websocket close)."""
+        try:
+            self._update_listeners.remove(callback)
+        except ValueError:
+            pass
+
     async def session_update(self, session_id, update, **kwargs) -> None:
         for callback in list(self._update_listeners):
             callback(session_id, update)

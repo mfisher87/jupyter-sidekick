@@ -16,6 +16,7 @@ from .handlers import (
     ModeHandler,
     ModelHandler,
     StateHandler,
+    StreamHandler,
 )
 from .manager import BindingManager
 from .registry import HarnessRegistry, HarnessSpec
@@ -58,5 +59,6 @@ class AcpExtension(ExtensionApp):
                 (url_path_join(base, r"chats/(.+)/model"), ModelHandler, deps),
                 (url_path_join(base, r"chats/(.+)/mode"), ModeHandler, deps),
                 (url_path_join(base, r"chats/(.+)/config-option"), ConfigOptionHandler, deps),
+                (url_path_join(base, r"chats/(.+)/stream"), StreamHandler, deps),
             ]
         )

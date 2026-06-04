@@ -12,9 +12,11 @@ import json
 from typing import Any
 
 from tornado.web import RequestHandler
+from tornado.websocket import WebSocketHandler
 
 from .binding import AlreadyBoundError
 from .registry import HarnessNotFoundError
+from .serialize import update_to_json
 
 
 class _BaseHandler(RequestHandler):
@@ -98,3 +100,43 @@ class ConfigOptionHandler(_SetterHandler):
     async def post(self, chat_id: str) -> None:
         body = self.json_body() or {}
         await self._apply(chat_id, "set_config_option", body.get("config_id"), body.get("value"))
+
+
+class StreamHandler(WebSocketHandler):
+    """Per-chat duplex stream: client sends {"type":"prompt","text":...}; server
+    streams the harness's session/update events back as JSON."""
+
+    def initialize(self, registry, manager) -> None:
+        self.manager = manager
+        self._binding = None
+        self._listener = None
+
+    def check_origin(self, origin: str) -> bool:
+        # Localhost PoC; tighten when hardening for multi-origin deployment.
+        return True
+
+    def open(self, chat_id: str) -> None:
+        self._binding = self.manager.lookup(chat_id)
+        if self._binding is None or not self._binding.is_bound:
+            self.close(code=4404, reason="no binding for chat")
+            return
+        self._listener = self._forward
+        self._binding.session.client.add_update_listener(self._listener)
+
+    def _forward(self, session_id, update) -> None:
+        try:
+            self.write_message(json.dumps(update_to_json(update)))
+        except Exception:
+            pass
+
+    async def on_message(self, raw) -> None:
+        try:
+            data = json.loads(raw)
+        except json.JSONDecodeError:
+            return
+        if data.get("type") == "prompt" and self._binding is not None:
+            await self._binding.session.prompt(data.get("text", ""))
+
+    def on_close(self) -> None:
+        if self._listener is not None and self._binding is not None and self._binding.is_bound:
+            self._binding.session.client.remove_update_listener(self._listener)
