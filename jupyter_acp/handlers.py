@@ -1,17 +1,21 @@
-"""REST handlers exposing the BindingManager over HTTP.
+"""REST + websocket handlers exposing the BindingManager over HTTP.
 
 Thin translation only: parse the request, call the manager / session, serialize
 the result. All real behaviour lives in the manager and session layers.
 
-Note: these are plain Tornado handlers (no auth) — fine for a localhost PoC.
-Hardening to authenticated `jupyter_server` APIHandlers is a follow-up.
+REST handlers are authenticated `jupyter_server` APIHandlers (token auth, proper
+XSRF handling). The registry + manager are read from the server settings, where
+the extension stored them. The websocket handler authenticates via the server's
+token on the upgrade request.
 """
 from __future__ import annotations
 
 import json
 from typing import Any
 
-from tornado.web import RequestHandler
+from jupyter_server.base.handlers import APIHandler
+from jupyter_server.extension.handler import ExtensionHandlerMixin
+from tornado import web
 from tornado.websocket import WebSocketHandler
 
 from .binding import AlreadyBoundError
@@ -19,15 +23,19 @@ from .registry import HarnessNotFoundError
 from .serialize import update_to_json
 
 
-class _BaseHandler(RequestHandler):
-    def initialize(self, registry, manager) -> None:
-        self.registry = registry
-        self.manager = manager
+class _BaseHandler(ExtensionHandlerMixin, APIHandler):
+    @property
+    def registry(self):
+        return self.settings["acp_registry"]
 
-    def write_json(self, payload: Any, status: int = 200) -> None:
+    @property
+    def manager(self):
+        return self.settings["acp_manager"]
+
+    def reply(self, payload: Any, status: int = 200) -> None:
         self.set_status(status)
         self.set_header("Content-Type", "application/json")
-        self.write(json.dumps(payload))
+        self.finish(json.dumps(payload))
 
     def json_body(self):
         try:
@@ -37,8 +45,9 @@ class _BaseHandler(RequestHandler):
 
 
 class HarnessesHandler(_BaseHandler):
+    @web.authenticated
     def get(self) -> None:
-        self.write_json(
+        self.reply(
             {
                 "harnesses": [
                     {"id": s.id, "display_name": s.display_name}
@@ -49,28 +58,30 @@ class HarnessesHandler(_BaseHandler):
 
 
 class BindHandler(_BaseHandler):
+    @web.authenticated
     async def post(self, chat_id: str) -> None:
         body = self.json_body()
         if body is None:
-            return self.write_json({"error": "invalid JSON"}, 400)
+            return self.reply({"error": "invalid JSON"}, 400)
         harness_id = body.get("harness_id")
         if not harness_id:
-            return self.write_json({"error": "missing harness_id"}, 400)
+            return self.reply({"error": "missing harness_id"}, 400)
         try:
             binding = await self.manager.bind(chat_id, harness_id)
         except HarnessNotFoundError:
-            return self.write_json({"error": f"unknown harness {harness_id!r}"}, 404)
+            return self.reply({"error": f"unknown harness {harness_id!r}"}, 404)
         except AlreadyBoundError as exc:
-            return self.write_json({"error": str(exc)}, 409)
-        self.write_json({"harness_id": binding.harness_id})
+            return self.reply({"error": str(exc)}, 409)
+        self.reply({"harness_id": binding.harness_id})
 
 
 class StateHandler(_BaseHandler):
+    @web.authenticated
     def get(self, chat_id: str) -> None:
         binding = self.manager.lookup(chat_id)
         if binding is None or not binding.is_bound:
-            return self.write_json({"harness_id": None})
-        self.write_json(
+            return self.reply({"harness_id": None})
+        self.reply(
             {"harness_id": binding.harness_id, **binding.session.session_state.snapshot()}
         )
 
@@ -79,24 +90,27 @@ class _SetterHandler(_BaseHandler):
     async def _apply(self, chat_id: str, method_name: str, *args) -> None:
         binding = self.manager.lookup(chat_id)
         if binding is None or not binding.is_bound:
-            return self.write_json({"error": "no binding for chat"}, 404)
+            return self.reply({"error": "no binding for chat"}, 404)
         await getattr(binding.session, method_name)(*args)
-        self.write_json({"ok": True})
+        self.reply({"ok": True})
 
 
 class ModelHandler(_SetterHandler):
+    @web.authenticated
     async def post(self, chat_id: str) -> None:
         body = self.json_body() or {}
         await self._apply(chat_id, "set_model", body.get("model_id"))
 
 
 class ModeHandler(_SetterHandler):
+    @web.authenticated
     async def post(self, chat_id: str) -> None:
         body = self.json_body() or {}
         await self._apply(chat_id, "set_mode", body.get("mode_id"))
 
 
 class ConfigOptionHandler(_SetterHandler):
+    @web.authenticated
     async def post(self, chat_id: str) -> None:
         body = self.json_body() or {}
         await self._apply(chat_id, "set_config_option", body.get("config_id"), body.get("value"))
@@ -106,10 +120,9 @@ class StreamHandler(WebSocketHandler):
     """Per-chat duplex stream: client sends {"type":"prompt","text":...}; server
     streams the harness's session/update events back as JSON."""
 
-    def initialize(self, registry, manager) -> None:
-        self.manager = manager
-        self._binding = None
-        self._listener = None
+    @property
+    def manager(self):
+        return self.settings["acp_manager"]
 
     def check_origin(self, origin: str) -> bool:
         # Localhost PoC; tighten when hardening for multi-origin deployment.
@@ -117,6 +130,7 @@ class StreamHandler(WebSocketHandler):
 
     def open(self, chat_id: str) -> None:
         self._binding = self.manager.lookup(chat_id)
+        self._listener = None
         if self._binding is None or not self._binding.is_bound:
             self.close(code=4404, reason="no binding for chat")
             return
@@ -134,9 +148,10 @@ class StreamHandler(WebSocketHandler):
             data = json.loads(raw)
         except json.JSONDecodeError:
             return
-        if data.get("type") == "prompt" and self._binding is not None:
+        if data.get("type") == "prompt" and getattr(self, "_binding", None) is not None:
             await self._binding.session.prompt(data.get("text", ""))
 
     def on_close(self) -> None:
-        if self._listener is not None and self._binding is not None and self._binding.is_bound:
-            self._binding.session.client.remove_update_listener(self._listener)
+        binding = getattr(self, "_binding", None)
+        if self._listener is not None and binding is not None and binding.is_bound:
+            binding.session.client.remove_update_listener(self._listener)

@@ -46,19 +46,15 @@ class AcpExtension(ExtensionApp):
         self.settings["acp_manager"] = BindingManager(registry)
 
     def initialize_handlers(self) -> None:
-        deps = dict(
-            registry=self.settings["acp_registry"],
-            manager=self.settings["acp_manager"],
-        )
         base = self.name
         self.handlers.extend(
             [
-                (url_path_join(base, "harnesses"), HarnessesHandler, deps),
-                (url_path_join(base, r"chats/(.+)/bind"), BindHandler, deps),
-                (url_path_join(base, r"chats/(.+)/state"), StateHandler, deps),
-                (url_path_join(base, r"chats/(.+)/model"), ModelHandler, deps),
-                (url_path_join(base, r"chats/(.+)/mode"), ModeHandler, deps),
-                (url_path_join(base, r"chats/(.+)/config-option"), ConfigOptionHandler, deps),
-                (url_path_join(base, r"chats/(.+)/stream"), StreamHandler, deps),
+                (url_path_join(base, "harnesses"), HarnessesHandler),
+                (url_path_join(base, r"chats/(.+)/bind"), BindHandler),
+                (url_path_join(base, r"chats/(.+)/state"), StateHandler),
+                (url_path_join(base, r"chats/(.+)/model"), ModelHandler),
+                (url_path_join(base, r"chats/(.+)/mode"), ModeHandler),
+                (url_path_join(base, r"chats/(.+)/config-option"), ConfigOptionHandler),
+                (url_path_join(base, r"chats/(.+)/stream"), StreamHandler),
             ]
         )
