@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Node / JupyterLab extension
+node_modules/
+lib/
+*.tsbuildinfo
+.yarn/
+# built labextension output
+*/labextension/
+
+# Jupyter / OS
+.ipynb_checkpoints/
+.DS_Store
+
+# Local dev isolation
+.worktrees/
