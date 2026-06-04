@@ -149,8 +149,9 @@ resolving the forks below.
   YDoc and broadcasts the diff to connected clients via the `_on_ydoc_update`
   observer. This is the document/RTC layer, entirely independent of
   `jupyter_ai_*` and `jupyterlab-chat`.
-- **Conclusion:** **green light for B.** Harness writes `.ipynb` on disk → open
-  notebook updates in ~0.5s–a few seconds, regardless of the chat layer.
+- **Conclusion:** **green light for B**, now **live-validated** (2026-06-03).
+  Harness writes `.ipynb` on disk → open notebook updates in ~0.5s–a few
+  seconds, regardless of the chat layer.
 - **Known caveats to carry into the spec:**
   - Polling latency grows with notebook size (interval = save-duration × 5,
     bounded below by 0.5s).
@@ -160,8 +161,16 @@ resolving the forks below.
   - Reverse staleness: the harness reads the on-disk file, so unsaved in-browser
     YDoc edits must be autosaved before the harness reads, or it sees stale
     content.
-  - This specific out-of-band reload path is **not directly unit-tested** in jsd
-    0.2.0. One live end-to-end check is warranted before relying on it heavily.
+  - **Live validation (2026-06-03):** with all-real `jupyter-server-documents`
+    components (`AsyncFileContentsManager` + `ArbitraryFileIdManager` +
+    `OutputsManager` + `YRoomFileAPI`), an out-of-band `.ipynb` write was
+    reflected into the live YDoc by the autonomous `_watch_file` poll in ~0.75s,
+    producing broadcast-worthy `Doc` diffs. Reproducible at
+    [`validation/step0_notebook_reflection.py`](../validation/step0_notebook_reflection.py).
+    Still untested (lower-risk, separable): a real websocket-connected browser
+    client receiving the broadcast, and a *real ACP harness* performing the
+    write — which also raises the distinct question of how well harnesses edit
+    `.ipynb` JSON.
 
 ## Decisions at a glance
 
