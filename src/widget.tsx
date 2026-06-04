@@ -99,6 +99,7 @@ function ChatComponent(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<boolean>(false);
   const [permission, setPermission] = useState<PendingPermission | null>(null);
+  const [starting, setStarting] = useState<string | null>(null);
 
   useEffect(() => {
     apiRef.current
@@ -154,17 +155,23 @@ function ChatComponent(): JSX.Element {
     }
   };
 
-  const start = async (): Promise<void> => {
+  const start = async (harnessId: string): Promise<void> => {
     setError(null);
-    const id = newChatId();
-    await apiRef.current.bind(id, chosen);
-    const snapshot = await apiRef.current.getState(id);
-    const stream = new ChatStream({ url: streamUrl(id), onEvent });
-    stream.connect();
-    streamRef.current = stream;
-    setChatId(id);
-    setState(snapshot);
-    setCommands(snapshot.available_commands ?? []);
+    setStarting(harnessId);
+    try {
+      const id = newChatId();
+      await apiRef.current.bind(id, harnessId);
+      const snapshot = await apiRef.current.getState(id);
+      const stream = new ChatStream({ url: streamUrl(id), onEvent });
+      stream.connect();
+      streamRef.current = stream;
+      setChatId(id);
+      setState(snapshot);
+      setCommands(snapshot.available_commands ?? []);
+    } catch (e) {
+      setError(String(e));
+      setStarting(null);
+    }
   };
 
   const send = (): void => {
@@ -183,39 +190,56 @@ function ChatComponent(): JSX.Element {
     const chosenUnavailable = !!chosenHarness && chosenHarness.available === false;
     const localIds = new Set(harnesses.map(h => h.id));
     const registryAgents = registry.filter(a => a.launchable && !localIds.has(a.id));
+    const isStarting = starting !== null;
     return (
       <div className="jacp-picker">
         <h3>New ACP chat</h3>
         {error && <div className="jacp-error">{error}</div>}
-        <select value={chosen} onChange={e => setChosen(e.target.value)}>
-          <optgroup label="Configured">
+        <div className="jacp-picker-row">
+          <select value={chosen} disabled={isStarting} onChange={e => setChosen(e.target.value)}>
             {harnesses.map(h => (
               <option key={h.id} value={h.id}>
                 {h.display_name}
                 {h.available === false ? ' — not installed' : ''}
               </option>
             ))}
-          </optgroup>
-          {registryAgents.length > 0 && (
-            <optgroup label="ACP Registry — runs on demand">
-              {registryAgents.map(a => (
-                <option key={a.id} value={a.id}>
-                  {a.display_name}
-                </option>
-              ))}
-            </optgroup>
-          )}
-        </select>
-        <button
-          onClick={() => start().catch(e => setError(String(e)))}
-          disabled={!chosen || chosenUnavailable}
-        >
-          Start
-        </button>
+          </select>
+          <button onClick={() => start(chosen)} disabled={!chosen || chosenUnavailable || isStarting}>
+            {starting === chosen ? 'Starting…' : 'Start'}
+          </button>
+        </div>
         {chosenUnavailable && (
           <div className="jacp-hint">
             “{chosenHarness?.display_name}” isn’t installed on the server. Install its CLI
             (the command on its <code>PATH</code>) to use it.
+          </div>
+        )}
+        {registryAgents.length > 0 && (
+          <div className="jacp-registry">
+            <div className="jacp-registry-head">More agents · ACP Registry</div>
+            <div className="jacp-registry-sub">
+              Run on demand via npx / uvx / downloaded binary. May prompt for the agent’s own sign-in.
+            </div>
+            <div className="jacp-agent-list">
+              {registryAgents.map(a => (
+                <button
+                  key={a.id}
+                  className="jacp-agent-card"
+                  disabled={isStarting}
+                  title={a.description ?? undefined}
+                  onClick={() => start(a.id)}
+                >
+                  {a.icon && <img className="jacp-agent-icon" src={a.icon} alt="" />}
+                  <span className="jacp-agent-text">
+                    <span className="jacp-agent-name">
+                      {a.display_name}
+                      {starting === a.id ? ' · starting…' : ''}
+                    </span>
+                    {a.description && <span className="jacp-agent-desc">{a.description}</span>}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -26,6 +26,87 @@
   max-width: 36ch;
 }
 
+.jacp-picker-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.jacp-registry {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.jacp-registry-head {
+  font-size: var(--jp-ui-font-size0);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--jp-content-font-color2);
+}
+
+.jacp-registry-sub {
+  font-size: var(--jp-ui-font-size0);
+  color: var(--jp-content-font-color3);
+  margin-bottom: 4px;
+}
+
+.jacp-agent-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.jacp-agent-card {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 6px 8px;
+  background: var(--jp-layout-color1);
+  border: 1px solid var(--jp-border-color2);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.jacp-agent-card:hover:not(:disabled) {
+  background: var(--jp-layout-color2);
+  border-color: var(--jp-border-color1);
+}
+
+.jacp-agent-card:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.jacp-agent-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.jacp-agent-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.jacp-agent-name {
+  color: var(--jp-content-font-color1);
+  font-weight: 600;
+}
+
+.jacp-agent-desc {
+  color: var(--jp-content-font-color3);
+  font-size: var(--jp-ui-font-size0);
+}
+
 .jacp-chat {
   display: flex;
   flex-direction: column;

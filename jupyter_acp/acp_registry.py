@@ -2,47 +2,112 @@
 
 The registry (https://agentclientprotocol.com, jointly maintained by Zed and
 JetBrains) is a public JSON index of ACP agents. Each entry has a `distribution`
-describing how to launch it; `npx` and `uvx` distributions are runnable on
-demand (no separate install step), so we can offer any of them as a binding.
-Binary distributions need a platform download and aren't supported yet.
+describing how to launch it:
+
+- `npx` / `uvx` — runnable on demand (no separate install step);
+- `binary` — a per-platform archive we download + extract + cache on first use.
 
 This is how we emulate Zed's "add more agents" marketplace using the community
 asset rather than a hand-maintained list.
 """
 from __future__ import annotations
 
+import io
 import json
+import os
+import platform
+import stat
+import tarfile
 import urllib.request
+import zipfile
+from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
 from .registry import HarnessSpec
 
 REGISTRY_URL = "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json"
+_USER_AGENT = "jupyter-acp"
+_SUPPORTED_ARCHIVES = (".tar.gz", ".tgz", ".tar.bz2", ".tar.xz", ".tar", ".zip")
+
+_SYSTEMS = {"Linux": "linux", "Darwin": "darwin", "Windows": "windows"}
+_ARCHES = {"x86_64": "x86_64", "amd64": "x86_64", "aarch64": "aarch64", "arm64": "aarch64"}
+
+
+def platform_key(system: str, machine: str) -> Optional[str]:
+    """Map (platform.system(), platform.machine()) to a registry platform key."""
+    sysname = _SYSTEMS.get(system)
+    arch = _ARCHES.get(machine.lower())
+    return f"{sysname}-{arch}" if sysname and arch else None
+
+
+def current_platform_key() -> Optional[str]:
+    return platform_key(platform.system(), platform.machine())
+
+
+def _download_bytes(url: str) -> bytes:
+    request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+    with urllib.request.urlopen(request, timeout=120) as resp:
+        return resp.read()
+
+
+def _extract(data: bytes, url: str, dest: Path) -> None:
+    dest.mkdir(parents=True, exist_ok=True)
+    if url.endswith(".zip"):
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            zf.extractall(dest)
+    else:
+        with tarfile.open(fileobj=io.BytesIO(data), mode="r:*") as tf:
+            tf.extractall(dest, filter="data")  # filter guards path traversal
 
 
 def spec_from_distribution(agent: Dict[str, Any]) -> Optional[HarnessSpec]:
-    """Derive a launchable HarnessSpec from a registry agent, or None if its
-    distribution needs a separate install (binary)."""
+    """Derive a runnable HarnessSpec from an npx/uvx distribution, or None.
+    Binary distributions are handled separately (they require a download)."""
     dist = agent.get("distribution", {})
     agent_id = agent["id"]
     name = agent.get("name", agent_id)
     if "npx" in dist:
         npx = dist["npx"]
         return HarnessSpec(
-            id=agent_id,
-            display_name=name,
-            command="npx",
+            id=agent_id, display_name=name, command="npx",
             args=("-y", npx["package"], *tuple(npx.get("args", []))),
         )
     if "uvx" in dist:
         uvx = dist["uvx"]
         return HarnessSpec(
-            id=agent_id,
-            display_name=name,
-            command="uvx",
+            id=agent_id, display_name=name, command="uvx",
             args=(uvx["package"], *tuple(uvx.get("args", []))),
         )
     return None
+
+
+def binary_spec(
+    agent: Dict[str, Any],
+    plat: str,
+    cache_root,
+    download: Callable[[str], bytes] = _download_bytes,
+) -> Optional[HarnessSpec]:
+    """Download + extract (cached) the platform binary and return a HarnessSpec,
+    or None if there's no supported archive for this platform."""
+    entry = agent.get("distribution", {}).get("binary", {}).get(plat)
+    if not entry or not entry.get("archive", "").endswith(_SUPPORTED_ARCHIVES):
+        return None
+    agent_id = agent["id"]
+    dest = Path(cache_root) / agent_id / str(agent.get("version", "")) / plat
+    cmd = (dest / entry["cmd"]).resolve()
+    if not cmd.exists():
+        _extract(download(entry["archive"]), entry["archive"], dest)
+    if not cmd.exists():
+        return None
+    mode = os.stat(cmd).st_mode
+    os.chmod(cmd, mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+    return HarnessSpec(
+        id=agent_id,
+        display_name=agent.get("name", agent_id),
+        command=str(cmd),
+        args=tuple(entry.get("args", ())),
+        env=entry.get("env"),
+    )
 
 
 class AcpRegistry:
@@ -52,15 +117,17 @@ class AcpRegistry:
         self,
         url: str = REGISTRY_URL,
         fetch: Optional[Callable[[], Dict[str, Any]]] = None,
+        cache_root=None,
     ) -> None:
         self._url = url
         self._fetch = fetch or self._default_fetch
+        self._cache_root = Path(cache_root or Path.home() / ".cache" / "jupyter-acp" / "agents")
+        self._platform = current_platform_key()
         self._agents: Dict[str, Dict[str, Any]] = {}
         self._loaded = False
 
     def _default_fetch(self) -> Dict[str, Any]:
-        # The CDN 403s the default Python user-agent, so set our own.
-        request = urllib.request.Request(self._url, headers={"User-Agent": "jupyter-acp"})
+        request = urllib.request.Request(self._url, headers={"User-Agent": _USER_AGENT})
         with urllib.request.urlopen(request, timeout=10) as resp:
             return json.loads(resp.read())
 
@@ -74,13 +141,30 @@ class AcpRegistry:
             self._agents = {}  # offline / fetch failure: degrade quietly
         self._loaded = True
 
+    def _launchable(self, agent: Dict[str, Any]) -> bool:
+        if spec_from_distribution(agent) is not None:
+            return True
+        if not self._platform:
+            return False
+        entry = agent.get("distribution", {}).get("binary", {}).get(self._platform)
+        return bool(entry and entry.get("archive", "").endswith(_SUPPORTED_ARCHIVES))
+
     def get(self, agent_id: str) -> Optional[Dict[str, Any]]:
         self._ensure_loaded()
         return self._agents.get(agent_id)
 
     def spec_for(self, agent_id: str) -> Optional[HarnessSpec]:
+        """Resolve a launch spec, downloading the binary if needed (blocking —
+        callers run this off the event loop)."""
         agent = self.get(agent_id)
-        return spec_from_distribution(agent) if agent else None
+        if agent is None:
+            return None
+        spec = spec_from_distribution(agent)
+        if spec is not None:
+            return spec
+        if self._platform:
+            return binary_spec(agent, self._platform, self._cache_root)
+        return None
 
     def listing(self) -> List[Dict[str, Any]]:
         self._ensure_loaded()
@@ -90,7 +174,7 @@ class AcpRegistry:
                 "display_name": a.get("name", a["id"]),
                 "description": a.get("description"),
                 "icon": a.get("icon"),
-                "launchable": spec_from_distribution(a) is not None,
+                "launchable": self._launchable(a),
             }
             for a in self._agents.values()
         ]

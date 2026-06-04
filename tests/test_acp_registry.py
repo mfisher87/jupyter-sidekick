@@ -2,7 +2,16 @@
 on-demand launch specs from npx/uvx distributions."""
 from __future__ import annotations
 
-from jupyter_acp.acp_registry import AcpRegistry, spec_from_distribution
+import io
+import os
+import tarfile
+
+from jupyter_acp.acp_registry import (
+    AcpRegistry,
+    binary_spec,
+    platform_key,
+    spec_from_distribution,
+)
 
 SAMPLE = {
     "version": "1",
@@ -61,3 +70,46 @@ def test_offline_safe():
 
     registry = AcpRegistry(fetch=boom)
     assert registry.listing() == []  # degrades quietly, never raises
+
+
+def test_platform_key_mapping():
+    assert platform_key("Linux", "x86_64") == "linux-x86_64"
+    assert platform_key("Darwin", "arm64") == "darwin-aarch64"
+    assert platform_key("Windows", "AMD64") == "windows-x86_64"
+    assert platform_key("Plan9", "sparc") is None
+
+
+def _targz(name: str, content: bytes) -> bytes:
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        info = tarfile.TarInfo(name=name)
+        info.size = len(content)
+        info.mode = 0o644
+        tar.addfile(info, io.BytesIO(content))
+    return buf.getvalue()
+
+
+def test_binary_spec_downloads_and_extracts(tmp_path):
+    agent = {
+        "id": "demo",
+        "name": "Demo",
+        "version": "1.0",
+        "distribution": {
+            "binary": {"linux-x86_64": {"archive": "https://x/demo.tar.gz", "cmd": "demo-acp"}}
+        },
+    }
+    data = _targz("demo-acp", b"#!/bin/sh\necho hi\n")
+    spec = binary_spec(agent, "linux-x86_64", tmp_path, download=lambda url: data)
+    assert spec is not None
+    assert spec.command.endswith("demo-acp")
+    assert os.path.exists(spec.command)
+    assert os.access(spec.command, os.X_OK)
+
+
+def test_binary_unsupported_archive_not_launchable(tmp_path):
+    agent = {
+        "id": "x",
+        "name": "X",
+        "distribution": {"binary": {"linux-x86_64": {"archive": "https://x/x.rar", "cmd": "x"}}},
+    }
+    assert binary_spec(agent, "linux-x86_64", tmp_path, download=lambda url: b"") is None
