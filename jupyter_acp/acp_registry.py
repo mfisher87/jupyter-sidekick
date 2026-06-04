@@ -59,7 +59,9 @@ class AcpRegistry:
         self._loaded = False
 
     def _default_fetch(self) -> Dict[str, Any]:
-        with urllib.request.urlopen(self._url, timeout=10) as resp:
+        # The CDN 403s the default Python user-agent, so set our own.
+        request = urllib.request.Request(self._url, headers={"User-Agent": "jupyter-acp"})
+        with urllib.request.urlopen(request, timeout=10) as resp:
             return json.loads(resp.read())
 
     def _ensure_loaded(self) -> None:
