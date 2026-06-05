@@ -34,9 +34,12 @@ jobs:
           jlpm build
 
       - name: Install package + test deps
-        # The labextension is already built above, so the jupyter-builder hook
-        # is skipped (skip-if-exists) and no JS build runs during pip install.
-        run: pip install -e ".[test]"
+        # --no-build-isolation so the jupyter-builder hook runs in this env
+        # (which has jlpm via jupyterlab); the labextension is already built
+        # above, so no rebuild happens.
+        run: |
+          pip install hatchling hatch-jupyter-builder editables
+          pip install -e ".[test]" --no-build-isolation
 
       - name: Verify extensions are discovered
         run: |

@@ -23,9 +23,9 @@ source (JupyterLab is needed at build time to compile the extension):
 ```bash
 git clone https://github.com/SchmidtDSE/jupyter-acp
 cd jupyter-acp
-pip install jupyterlab          # provides jlpm for the build
-jlpm install && jlpm build:prod
-pip install -e .
+pip install jupyterlab hatchling hatch-jupyter-builder editables   # build tooling (jlpm)
+jlpm install && jlpm build
+pip install -e . --no-build-isolation                    # hook reuses the built JS
 jupyter labextension develop --overwrite .
 ```
 
