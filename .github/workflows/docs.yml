@@ -30,7 +30,7 @@ jobs:
         working-directory: docs
         env:
           # Project Pages are served under /<repo>/.
-          BASE_URL: /jupyter-acp
+          BASE_URL: /jupyterlab-acp
         run: myst build --html
       - uses: actions/upload-pages-artifact@v3
         with:

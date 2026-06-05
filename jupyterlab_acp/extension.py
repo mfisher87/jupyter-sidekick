@@ -75,7 +75,7 @@ def build_default_registry() -> HarnessRegistry:
 
 
 class AcpExtension(ExtensionApp):
-    name = "jupyter_acp"
+    name = "jupyterlab_acp"
 
     harnesses = ListTrait(
         DictTrait(),

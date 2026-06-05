@@ -26,7 +26,7 @@ from typing import Any, Callable, Dict, List, Optional
 from .registry import HarnessSpec
 
 REGISTRY_URL = "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json"
-_USER_AGENT = "jupyter-acp"
+_USER_AGENT = "jupyterlab-acp"
 _SUPPORTED_ARCHIVES = (".tar.gz", ".tgz", ".tar.bz2", ".tar.xz", ".tar", ".zip")
 
 _SYSTEMS = {"Linux": "linux", "Darwin": "darwin", "Windows": "windows"}
@@ -121,7 +121,7 @@ class AcpRegistry:
     ) -> None:
         self._url = url
         self._fetch = fetch or self._default_fetch
-        self._cache_root = Path(cache_root or Path.home() / ".cache" / "jupyter-acp" / "agents")
+        self._cache_root = Path(cache_root or Path.home() / ".cache" / "jupyterlab-acp" / "agents")
         self._platform = current_platform_key()
         self._agents: Dict[str, Dict[str, Any]] = {}
         self._loaded = False

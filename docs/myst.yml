@@ -1,8 +1,8 @@
 version: 1
 project:
-  title: jupyter-acp
+  title: jupyterlab-acp
   description: Jupyter-native access to coding agents over the Agent Client Protocol (ACP).
-  github: https://github.com/SchmidtDSE/jupyter-acp
+  github: https://github.com/SchmidtDSE/jupyterlab-acp
   toc:
     - file: index.md
     - file: install.md

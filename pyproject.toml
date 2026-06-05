@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "jupyter-acp"
+name = "jupyterlab-acp"
 version = "0.0.1"
 description = "Jupyter-native access to coding agents over the Agent Client Protocol (ACP): per-chat single-agent binding."
 readme = "README.md"
@@ -26,29 +26,29 @@ dependencies = [
 test = ["pytest>=7", "pytest-asyncio>=0.23"]
 
 [project.urls]
-Homepage = "https://github.com/SchmidtDSE/jupyter-acp"
-Issues = "https://github.com/SchmidtDSE/jupyter-acp/issues"
+Homepage = "https://github.com/SchmidtDSE/jupyterlab-acp"
+Issues = "https://github.com/SchmidtDSE/jupyterlab-acp/issues"
 
 [project.entry-points."jupyter_server.extension_points"]
-jupyter_acp = "jupyter_acp"
+jupyterlab_acp = "jupyterlab_acp"
 
 [tool.hatch.build.targets.wheel]
-packages = ["jupyter_acp"]
+packages = ["jupyterlab_acp"]
 
 [tool.hatch.build.targets.wheel.shared-data]
-"jupyter-config/jupyter_server_config.d/jupyter_acp.json" = "etc/jupyter/jupyter_server_config.d/jupyter_acp.json"
+"jupyter-config/jupyter_server_config.d/jupyterlab_acp.json" = "etc/jupyter/jupyter_server_config.d/jupyterlab_acp.json"
 # The built labextension dir already contains install.json, so it ships via the
 # mapping below — no separate install.json entry (that would duplicate it).
-"jupyter_acp/labextension" = "share/jupyter/labextensions/jupyter-acp"
+"jupyterlab_acp/labextension" = "share/jupyter/labextensions/jupyterlab-acp"
 
 [tool.hatch.build.hooks.jupyter-builder]
 dependencies = ["hatch-jupyter-builder>=0.5"]
 build-function = "hatch_jupyter_builder.npm_builder"
 ensured-targets = [
-  "jupyter_acp/labextension/static/style.js",
-  "jupyter_acp/labextension/package.json",
+  "jupyterlab_acp/labextension/static/style.js",
+  "jupyterlab_acp/labextension/package.json",
 ]
-skip-if-exists = ["jupyter_acp/labextension/static/style.js"]
+skip-if-exists = ["jupyterlab_acp/labextension/static/style.js"]
 
 [tool.hatch.build.hooks.jupyter-builder.build-kwargs]
 # Dev build for now: build:prod trips a bug in the old license-webpack-plugin

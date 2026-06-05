@@ -14,8 +14,8 @@ demand via `npx`/`uvx`/downloaded binary.
 Not yet on PyPI; JupyterLab is needed at build time to compile the extension.
 
 ```bash
-git clone https://github.com/SchmidtDSE/jupyter-acp
-cd jupyter-acp
+git clone https://github.com/SchmidtDSE/jupyterlab-acp
+cd jupyterlab-acp
 pip install jupyterlab hatchling hatch-jupyter-builder editables   # build tooling (jlpm)
 jlpm install && jlpm build
 pip install -e . --no-build-isolation                              # hook reuses the built JS

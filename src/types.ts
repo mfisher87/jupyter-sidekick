@@ -1,4 +1,4 @@
-// Types mirroring the jupyter_acp server payloads.
+// Types mirroring the jupyterlab_acp server payloads.
 
 export interface ModelOption {
   id: string;
@@ -35,7 +35,7 @@ export interface ToolCallInfo {
   status?: string | null;
 }
 
-/** Response of GET /jupyter_acp/chats/<id>/state */
+/** Response of GET /jupyterlab_acp/chats/<id>/state */
 export interface SessionStateSnapshot {
   harness_id: string | null;
   available_models?: ModelOption[];
@@ -46,7 +46,7 @@ export interface SessionStateSnapshot {
   available_commands?: AcpCommand[];
 }
 
-/** Entry of GET /jupyter_acp/harnesses */
+/** Entry of GET /jupyterlab_acp/harnesses */
 export interface HarnessInfo {
   id: string;
   display_name: string;
@@ -54,7 +54,7 @@ export interface HarnessInfo {
   available?: boolean;
 }
 
-/** Entry of GET /jupyter_acp/registry (the shared ACP Agent Registry). */
+/** Entry of GET /jupyterlab_acp/registry (the shared ACP Agent Registry). */
 export interface RegistryAgent {
   id: string;
   display_name: string;

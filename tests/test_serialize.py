@@ -4,7 +4,7 @@ from __future__ import annotations
 import acp
 from acp import schema as S
 
-from jupyter_acp.serialize import update_to_json
+from jupyterlab_acp.serialize import update_to_json
 
 
 def test_agent_message_chunk():

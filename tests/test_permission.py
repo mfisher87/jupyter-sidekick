@@ -6,7 +6,7 @@ import asyncio
 
 from acp import schema as S
 
-from jupyter_acp.acp_client import HarnessClient
+from jupyterlab_acp.acp_client import HarnessClient
 
 
 def _options():

@@ -29,7 +29,7 @@ def _free_port() -> int:
 
 
 def _request(base, token, path, method="GET", body=None, auth=True):
-    url = f"{base}/jupyter_acp/{path}"
+    url = f"{base}/jupyterlab_acp/{path}"
     headers = {}
     if auth:
         headers["Authorization"] = f"token {token}"

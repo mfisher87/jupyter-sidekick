@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from acp import schema as S
 
-from jupyter_acp.state import SessionState
+from jupyterlab_acp.state import SessionState
 
 
 def test_snapshot_has_empty_commands_by_default():

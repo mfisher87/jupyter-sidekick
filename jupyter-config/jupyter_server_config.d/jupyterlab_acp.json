@@ -1,7 +1,7 @@
 {
   "ServerApp": {
     "jpserver_extensions": {
-      "jupyter_acp": true
+      "jupyterlab_acp": true
     }
   }
 }

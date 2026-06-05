@@ -6,7 +6,7 @@
 import { StreamEvent } from './types';
 
 export interface ChatStreamOptions {
-  /** ws(s)://.../jupyter_acp/chats/<id>/stream */
+  /** ws(s)://.../jupyterlab_acp/chats/<id>/stream */
   url: string;
   onEvent: (event: StreamEvent) => void;
   WebSocketImpl?: typeof WebSocket;

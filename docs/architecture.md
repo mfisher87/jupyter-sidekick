@@ -1,11 +1,11 @@
 ---
 title: Architecture
-description: How jupyter-acp is put together — module map, data flows, and the non-obvious decisions.
+description: How jupyterlab-acp is put together — module map, data flows, and the non-obvious decisions.
 ---
 
 # Architecture
 
-`jupyter-acp` is a Jupyter Server extension (Python) plus a JupyterLab
+`jupyterlab-acp` is a Jupyter Server extension (Python) plus a JupyterLab
 labextension (TypeScript/React), built on three open pieces and **nothing from
 the `jupyter_ai_*` stack**:
 
@@ -18,10 +18,10 @@ the `jupyter_ai_*` stack**:
 
 ```
 browser (React panel)
-   │  REST: /jupyter_acp/harnesses, /registry, /chats/<id>/{bind,state,model,mode,config-option}
-   │  WebSocket: /jupyter_acp/chats/<id>/stream   (prompts out, session/update events in)
+   │  REST: /jupyterlab_acp/harnesses, /registry, /chats/<id>/{bind,state,model,mode,config-option}
+   │  WebSocket: /jupyterlab_acp/chats/<id>/stream   (prompts out, session/update events in)
    ▼
-jupyter_acp server extension
+jupyterlab_acp server extension
    BindingManager → ChatBinding → HarnessSession
                                       │  Agent Client Protocol (JSON-RPC over stdio)
                                       ▼
@@ -31,7 +31,7 @@ jupyter_acp server extension
                           jupyter-server-documents → reflects into your open notebook
 ```
 
-## Python package (`jupyter_acp/`)
+## Python package (`jupyterlab_acp/`)
 
 | Module | Role |
 |---|---|

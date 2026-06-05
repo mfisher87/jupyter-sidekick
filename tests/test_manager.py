@@ -7,9 +7,9 @@ import sys
 
 import pytest
 
-from jupyter_acp.binding import AlreadyBoundError
-from jupyter_acp.manager import BindingManager
-from jupyter_acp.registry import HarnessNotFoundError, HarnessRegistry, HarnessSpec
+from jupyterlab_acp.binding import AlreadyBoundError
+from jupyterlab_acp.manager import BindingManager
+from jupyterlab_acp.registry import HarnessNotFoundError, HarnessRegistry, HarnessSpec
 
 FAKE_AGENT = os.path.join(os.path.dirname(__file__), "fake_agent.py")
 HERE = os.path.dirname(__file__)

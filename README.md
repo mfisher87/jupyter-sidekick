@@ -1,4 +1,4 @@
-# jupyter-acp
+# jupyterlab-acp
 
 Jupyter-native access to coding agents over the
 [Agent Client Protocol (ACP)](https://agentclientprotocol.com) — a per-chat,
@@ -6,7 +6,7 @@ single-agent experience in JupyterLab, with capability-driven model/mode
 selectors and slash-command + skill support that comes straight from whatever
 ACP agent ("harness") you bind a chat to.
 
-[![CI](https://github.com/SchmidtDSE/jupyter-acp/actions/workflows/ci.yml/badge.svg)](https://github.com/SchmidtDSE/jupyter-acp/actions/workflows/ci.yml)
+[![CI](https://github.com/SchmidtDSE/jupyterlab-acp/actions/workflows/ci.yml/badge.svg)](https://github.com/SchmidtDSE/jupyterlab-acp/actions/workflows/ci.yml)
 
 > **Status: early but working.** A functioning JupyterLab extension: open a chat
 > in the sidebar (or as draggable main-area tabs), bind an agent, switch
@@ -21,8 +21,8 @@ Requires JupyterLab ≥ 4.2 and at least one ACP agent on your `PATH` — e.g.
 source (JupyterLab is needed at build time to compile the extension):
 
 ```bash
-git clone https://github.com/SchmidtDSE/jupyter-acp
-cd jupyter-acp
+git clone https://github.com/SchmidtDSE/jupyterlab-acp
+cd jupyterlab-acp
 pip install jupyterlab hatchling hatch-jupyter-builder editables   # build tooling (jlpm)
 jlpm install && jlpm build
 pip install -e . --no-build-isolation                    # hook reuses the built JS
@@ -75,7 +75,7 @@ standalone app.
 
 ## How it's built
 
-`jupyter-acp` is deliberately a thin, additive layer on open standards:
+`jupyterlab-acp` is deliberately a thin, additive layer on open standards:
 
 - **[`agent-client-protocol`](https://agentclientprotocol.com)** — the official
   ACP Python library (the same one every ACP client builds on). All agent
@@ -106,7 +106,7 @@ on it is how we honor that work. We're grateful for it.
 A working proof-of-concept — the same idea built *inside* a fork of
 `jupyterlab/jupyter-ai`, on top of the `jupyter-ai` stack — lives at
 [`cboettig/jupyter-ai@acp-bridge-impl`](https://github.com/cboettig/jupyter-ai/tree/acp-bridge-impl/jupyter-ai-acp-bridge).
-`jupyter-acp` is the ground-up redesign that sheds those dependencies; the PoC
+`jupyterlab-acp` is the ground-up redesign that sheds those dependencies; the PoC
 remains a useful empirical reference for how each piece behaves.
 
 ## Context
@@ -142,7 +142,7 @@ python -m pytest                  # 37 tests: ACP core, capabilities, binding,
 jlpm build:lib                    # typecheck the frontend
 ```
 
-Layout: `jupyter_acp/` is the Python server extension (ACP session/binding +
+Layout: `jupyterlab_acp/` is the Python server extension (ACP session/binding +
 REST/websocket handlers, on `agent-client-protocol`); `src/` is the TypeScript
 labextension (React chat panel); `tests/` and `validation/` hold the suite and
 the Step-0 notebook-reflection check.

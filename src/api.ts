@@ -1,4 +1,4 @@
-// REST client for the jupyter_acp server extension.
+// REST client for the jupyterlab_acp server extension.
 //
 // `fetch` and `baseUrl` are injectable so this is unit-testable and so the
 // JupyterLab plugin can later supply a `ServerConnection`-aware fetch (XSRF,
@@ -7,7 +7,7 @@
 import { HarnessInfo, RegistryAgent, SessionStateSnapshot } from './types';
 
 export interface ApiOptions {
-  /** e.g. "/jupyter_acp" (no trailing slash required). */
+  /** e.g. "/jupyterlab_acp" (no trailing slash required). */
   baseUrl: string;
   fetch?: typeof fetch;
 }
@@ -31,7 +31,7 @@ export class AcpApi {
 
   private async readJson<T>(res: Response): Promise<T> {
     if (!res.ok) {
-      throw new Error(`jupyter-acp request failed: ${res.status}`);
+      throw new Error(`jupyterlab-acp request failed: ${res.status}`);
     }
     return (await res.json()) as T;
   }
