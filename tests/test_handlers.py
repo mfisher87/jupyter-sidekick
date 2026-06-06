@@ -115,3 +115,35 @@ def test_requires_auth(server):
     base, token = server
     code, _ = _request(base, token, "harnesses", auth=False)
     assert code in (401, 403)
+
+
+# --- resolve_cwd (pure; no server needed) -------------------------------------
+# Regression coverage for the 502 where an unexpanded/missing working directory
+# was reported as a "command not installed on PATH" launch failure.
+from jupyterlab_acp.handlers import resolve_cwd  # noqa: E402
+
+_HOME_PROJ = os.path.expanduser("~/proj")
+
+
+@pytest.mark.parametrize(
+    "requested, server_root, env, existing, expected",
+    [
+        # requested exists -> returned as-is
+        ("/exists", "/root", {}, {"/exists"}, "/exists"),
+        # a literal "~" is expanded before the existence check
+        ("~/proj", None, {}, {_HOME_PROJ}, _HOME_PROJ),
+        # "$VARS" are expanded
+        ("$WORK/x", None, {"WORK": "/work"}, {"/work/x"}, "/work/x"),
+        # requested missing -> fall back to the server root
+        ("/gone", "/root", {}, {"/root"}, "/root"),
+        # nothing exists -> None, so the subprocess inherits the server's cwd
+        ("/gone", "/also-gone", {}, set(), None),
+        # empty requested is skipped, not treated as a path
+        ("", "/root", {}, {"/root"}, "/root"),
+    ],
+)
+def test_resolve_cwd(requested, server_root, env, existing, expected, monkeypatch):
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    monkeypatch.setattr(os.path, "isdir", lambda p: p in existing)
+    assert resolve_cwd(requested, server_root) == expected
